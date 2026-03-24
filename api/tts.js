@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     const { text, voice_id } = req.body;
     if (!text || text.length > 5000) { res.status(400).json({error:'Invalid text'}); return; }
 
-    const voiceId = voice_id || 'KDImLuG6RkuyuX5httC7'; // Iordanis - Greek Male
+    const voiceId = voice_id || 'KDImLuG6RkuyuX5httC7'; // Takis - Greek Male
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
