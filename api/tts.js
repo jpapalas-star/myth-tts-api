@@ -8,12 +8,26 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({error:'Method not allowed'}); return; }
 
   try {
-    const { text, voice_id } = req.body;
-    if (!text || text.length > 5000) { res.status(400).json({error:'Invalid text'}); return; }
+    // Safety: Vercel auto-parses JSON body, but guard against edge cases
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch(e) {}
+    }
+    if (!body) {
+      res.status(400).json({error:'Empty body'}); return;
+    }
+
+    const { text, voice_id } = body;
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      res.status(400).json({error:'Missing or empty text'}); return;
+    }
+    if (text.length > 5000) {
+      res.status(400).json({error:'Text too long (max 5000)'}); return;
+    }
 
     const voiceId = voice_id || 'KDImLuG6RkuyuX5httC7'; // Takis - Greek Male
 
-    const response = await fetch(
+    const elRes = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
       {
         method: 'POST',
@@ -23,7 +37,7 @@ export default async function handler(req, res) {
           'Accept': 'audio/mpeg'
         },
         body: JSON.stringify({
-          text,
+          text: text.trim(),
           model_id: 'eleven_multilingual_v2',
           voice_settings: {
             stability: 0.5,
@@ -35,17 +49,23 @@ export default async function handler(req, res) {
       }
     );
 
-    if (!response.ok) {
-      const err = await response.text();
-      res.status(response.status).json({error: err});
+    if (!elRes.ok) {
+      const errText = await elRes.text();
+      console.error(`ElevenLabs error ${elRes.status}:`, errText);
+      // Return the actual EL status so client can decide what to do
+      res.status(elRes.status).json({
+        error: `ElevenLabs ${elRes.status}`,
+        detail: errText
+      });
       return;
     }
 
-    const audioBuffer = await response.arrayBuffer();
+    const audioBuffer = await elRes.arrayBuffer();
     const base64Audio = Buffer.from(audioBuffer).toString('base64');
     res.status(200).json({ audio: base64Audio, contentType: 'audio/mpeg' });
 
   } catch (err) {
+    console.error('TTS handler error:', err);
     res.status(500).json({error: err.message});
   }
 }
