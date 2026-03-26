@@ -10,28 +10,15 @@ export default async function handler(req, res) {
   const R2_BUCKET = 'myth-universe';
   const R2_PUBLIC = 'https://pub-928be8961edc4bd294392b36f9a41216.r2.dev';
 
-  // Only cinematic prefixes - music/launch fetched separately to avoid timeout
-  const prefixes = [
-    'landing/1landRuins/',
-    'landing/2landExistingCiv/',
-    'landing/3landJungle/',
-    'searching/1SearchingRuins/',
-    'searching/2SearchingExistingCiv/',
-    'searching/3SearchingJungle/',
-    'Finding/1findruinsScifi/',
-    'Finding/2FinfExistCim/',
-    'Finding/3findJungle/',
-  ];
-
-  async function listPrefix(prefix) {
-    const url = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET}?prefix=${encodeURIComponent(prefix)}&max-keys=100`;
+  try {
+    const crypto = await import('crypto');
     const now = new Date();
     const dateStr = now.toISOString().replace(/[:-]|\.\d{3}/g,'').slice(0,15)+'Z';
     const dateOnly = dateStr.slice(0,8);
-    const crypto = await import('crypto');
-    function hmac(key, data) { return crypto.createHmac('sha256', key).update(data).digest(); }
+    function hmac(key, data){ return crypto.createHmac('sha256', key).update(data).digest(); }
     const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
     const path = `/${R2_BUCKET}`;
+    const prefix = 'SOUNDS/Music/';
     const query = `max-keys=100&prefix=${encodeURIComponent(prefix)}`;
     const emptyHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
     const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
@@ -42,38 +29,19 @@ export default async function handler(req, res) {
     const signingKey = hmac(hmac(hmac(hmac(`AWS4${R2_SECRET_KEY}`, dateOnly), 'auto'), 's3'), 'aws4_request');
     const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex');
     const authorization = `AWS4-HMAC-SHA256 Credential=${R2_ACCESS_KEY}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
     const response = await fetch(`https://${host}${path}?${query}`, {
       headers: { host, 'x-amz-date': dateStr, 'x-amz-content-sha256': emptyHash, Authorization: authorization }
     });
     const text = await response.text();
-    const matches = text.matchAll(/<Key>([^<]+\.(?:mp4|webm|mov|mp3))<\/Key>/gi);
-    const files = [];
-    for(const m of matches) files.push(m[1]);
-    return files;
-  }
-
-  try {
-    const result = { landing: {1:[],2:[],3:[]}, searching: {1:[],2:[],3:[]}, finding: {1:[],2:[],3:[]} };
-    
-    // Run all in parallel for speed
-    await Promise.all(prefixes.map(async function(prefix) {
-      const files = await listPrefix(prefix);
-      const urls = files.map(f => `${R2_PUBLIC}/${f}`);
-      if(prefix.startsWith('landing')) {
-        const t = prefix.includes('1land')?1:prefix.includes('2land')?2:3;
-        result.landing[t] = urls;
-      } else if(prefix.startsWith('searching')) {
-        const t = prefix.includes('1Search')?1:prefix.includes('2Search')?2:3;
-        result.searching[t] = urls;
-      } else if(prefix.startsWith('Finding')) {
-        const t = prefix.includes('1find')?1:prefix.includes('2F')?2:3;
-        result.finding[t] = urls;
-      }
-    }));
+    const matches = text.matchAll(/<Key>([^<]+\.mp3)<\/Key>/gi);
+    const tracks = [];
+    for(const m of matches) tracks.push(`${R2_PUBLIC}/${m[1]}`);
+    tracks.sort(); // 1.mp3, 2.mp3, 3.mp3...
 
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.status(200).json(result);
+    res.status(200).json({ tracks });
   } catch(err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message, tracks: [] });
   }
 }
