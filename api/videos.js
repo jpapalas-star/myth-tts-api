@@ -11,6 +11,7 @@ export default async function handler(req, res) {
   const R2_PUBLIC = 'https://pub-928be8961edc4bd294392b36f9a41216.r2.dev';
 
   const prefixes = [
+    'Launch_Video/',
     'landing/1landRuins/',
     'landing/2landExistingCiv/',
     'landing/3landJungle/',
@@ -68,13 +69,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const result = { landing: {1:[],2:[],3:[]}, searching: {1:[],2:[],3:[]}, finding: {1:[],2:[],3:[]} };
+    const result = { launch: [], landing: {1:[],2:[],3:[]}, searching: {1:[],2:[],3:[]}, finding: {1:[],2:[],3:[]} };
     
     for(const prefix of prefixes) {
       const files = await listPrefix(prefix);
       const urls = files.map(f => `${R2_PUBLIC}/${f}`);
       
-      if(prefix.startsWith('landing')) {
+      if(prefix.startsWith('Launch_Video')) {
+        result.launch = urls; // all files in Launch_Video
+      } else if(prefix.startsWith('landing')) {
         const t = prefix.includes('1land')?1:prefix.includes('2land')?2:3;
         result.landing[t] = urls;
       } else if(prefix.startsWith('searching')) {
