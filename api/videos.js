@@ -17,9 +17,9 @@ export default async function handler(req, res) {
     'searching/1SearchingRuins/',
     'searching/2SearchingExistingCiv/',
     'searching/3SearchingJungle/',
-    'finding/1findruinsScifi/',
-    'finding/2FinfExistCim/',
-    'finding/3findJungle/',
+    'Finding/1findruinsScifi/',
+    'Finding/2FinfExistCim/',
+    'Finding/3findJungle/',
   ];
 
   async function listPrefix(prefix) {
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
       } else if(prefix.startsWith('searching')) {
         const t = prefix.includes('1Search')||prefix.includes('1search')?1:prefix.includes('2Search')||prefix.includes('2search')?2:3;
         result.searching[t] = urls;
-      } else if(prefix.startsWith('finding')) {
+      } else if(prefix.startsWith('Finding')) {
         const t = prefix.includes('1find')?1:prefix.includes('2F')||prefix.includes('2f')?2:3;
         result.finding[t] = urls;
       }
