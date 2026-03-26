@@ -16,7 +16,10 @@ export default async function handler(req, res) {
     'landing/3landJungle/',
     'searching/1SearchingRuins/',
     'searching/2SearchingExistingCiv/',
-    'searching/3SearchingJungle/'
+    'searching/3SearchingJungle/',
+    'finding/1findruinsScifi/',
+    'finding/2FinfExistCim/',
+    'finding/3findJungle/',
   ];
 
   async function listPrefix(prefix) {
@@ -65,7 +68,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const result = { landing: {1:[],2:[],3:[]}, searching: {1:[],2:[],3:[]} };
+    const result = { landing: {1:[],2:[],3:[]}, searching: {1:[],2:[],3:[]}, finding: {1:[],2:[],3:[]} };
     
     for(const prefix of prefixes) {
       const files = await listPrefix(prefix);
@@ -74,9 +77,12 @@ export default async function handler(req, res) {
       if(prefix.startsWith('landing')) {
         const t = prefix.includes('1land')?1:prefix.includes('2land')?2:3;
         result.landing[t] = urls;
-      } else {
+      } else if(prefix.startsWith('searching')) {
         const t = prefix.includes('1Search')||prefix.includes('1search')?1:prefix.includes('2Search')||prefix.includes('2search')?2:3;
         result.searching[t] = urls;
+      } else if(prefix.startsWith('finding')) {
+        const t = prefix.includes('1find')?1:prefix.includes('2F')||prefix.includes('2f')?2:3;
+        result.finding[t] = urls;
       }
     }
     
