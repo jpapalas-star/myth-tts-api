@@ -11,6 +11,8 @@ export default async function handler(req, res) {
   const R2_PUBLIC = 'https://pub-928be8961edc4bd294392b36f9a41216.r2.dev';
 
   const prefixes = [
+    'SOUNDS/Music/',
+    'Launch_Video/',
     'landing/1landRuins/',
     'landing/2landExistingCiv/',
     'landing/3landJungle/',
@@ -61,20 +63,24 @@ export default async function handler(req, res) {
     });
     
     const text = await response.text();
-    const matches = text.matchAll(/<Key>([^<]+\.(?:mp4|webm|mov))<\/Key>/gi);
+    const matches = text.matchAll(/<Key>([^<]+\.(?:mp4|webm|mov|mp3))<\/Key>/gi);
     const files = [];
     for(const m of matches) files.push(m[1]);
     return files;
   }
 
   try {
-    const result = { landing: {1:[],2:[],3:[]}, searching: {1:[],2:[],3:[]}, finding: {1:[],2:[],3:[]} };
+    const result = { music: [], launch: [], landing: {1:[],2:[],3:[]}, searching: {1:[],2:[],3:[]}, finding: {1:[],2:[],3:[]} };
     
     for(const prefix of prefixes) {
       const files = await listPrefix(prefix);
       const urls = files.map(f => `${R2_PUBLIC}/${f}`);
       
-      if(prefix.startsWith('landing')) {
+      if(prefix.startsWith('SOUNDS/Music')) {
+        result.music = urls.sort(); // sort so 1.mp3, 2.mp3, 3.mp3 in order
+      } else if(prefix.startsWith('Launch_Video')) {
+        result.launch = urls;
+      } else if(prefix.startsWith('landing')) {
         const t = prefix.includes('1land')?1:prefix.includes('2land')?2:3;
         result.landing[t] = urls;
       } else if(prefix.startsWith('searching')) {
