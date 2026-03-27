@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   const USE_KV = !!(KV_URL && KV_TOKEN);
 
   const TWO_MONTHS = 60 * 24 * 60 * 60; // 60 days in seconds
-  const TOP_N = 15;
+  const TOP_N = 30;
   const SCORES_KEY = 'myth_scores';
 
   async function kvGet(key) {
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
       scores.sort((a, b) => b.score - a.score);
 
       // Keep top 100 (to not grow unbounded)
-      scores = scores.slice(0, 100);
+      scores = scores.slice(0, 200);
 
       await kvSet(SCORES_KEY, scores, TWO_MONTHS);
 
